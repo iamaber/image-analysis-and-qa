@@ -7,9 +7,7 @@ from PIL import Image
 from ultralytics import YOLO
 
 # Load the YOLO model (using a lightweight pre-trained model)
-model = YOLO(
-    "yolov8n.pt"
-)  # You can change to other variants like 'yolov8s.pt' for better accuracy
+model = YOLO("yolo11m.pt")
 
 
 def detect_objects(image: Image.Image) -> tuple[Image.Image, List[Dict]]:
