@@ -1,6 +1,6 @@
-import base64
 from io import BytesIO
 from typing import List, Dict
+import base64
 
 from fastapi import FastAPI, UploadFile, File
 from PIL import Image
@@ -11,17 +11,6 @@ model = YOLO("yolo11m.pt")
 
 
 def detect_objects(image: Image.Image) -> tuple[Image.Image, List[Dict]]:
-    """
-    Detects objects in the given image using YOLOv8.
-
-    Args:
-        image (PIL.Image.Image): The input image.
-
-    Returns:
-        tuple:
-            - Annotated image with bounding boxes drawn (PIL.Image.Image).
-            - List of detections, each as a dict with 'class_name', 'bounding_box' (list [x1, y1, x2, y2]), and 'confidence'.
-    """
     # Run YOLO inference on the PIL image
     results = model(image)
 
@@ -69,7 +58,8 @@ async def detect_endpoint(file: UploadFile = File(...)):
     # Encode annotated image to base64
     buffer = BytesIO()
     annotated_img.save(buffer, format="PNG")
-    img_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
+    img_bytes = buffer.getvalue()
+    img_base64 = base64.b64encode(img_bytes).decode("utf-8")
 
     # Return JSON response
-    return {"annotated_image_base64": img_base64, "detections": detections}
+    return {"image": f"data:image/png;base64,{img_base64}", "detections": detections}
