@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Vision Platform - Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f8fafc;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 18px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-icon svg {
+            width: 22px;
+            height: 22px;
+            stroke: white;
+            stroke-width: 2.5;
+            fill: none;
+        }
+
+        .logo h1 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #0f172a;
+            letter-spacing: -0.3px;
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 16px 8px 8px;
+            background: #f8fafc;
+            border-radius: 24px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .user-info:hover {
+            background: #f1f5f9;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #ec4899 0%, #be185d 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: white;
+            font-size: 14px;
+        }
+
+        .user-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #0f172a;
+            line-height: 1.2;
+        }
+
+        .user-email {
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .logout-btn {
+            padding: 9px 18px;
+            background: white;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .logout-btn:hover {
+            border-color: #cbd5e1;
+            background: #f8fafc;
+        }
+
+        .main-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 32px 32px 60px;
+        }
+
+        .upload-section {
+            background: white;
+            border-radius: 16px;
+            padding: 36px;
+            margin-bottom: 28px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+            border: 1px solid #e2e8f0;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 8px;
+            letter-spacing: -0.3px;
+        }
+
+        .section-subtitle {
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 28px;
+        }
+
+        .upload-area {
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            padding: 48px 32px;
+            text-align: center;
+            background: #f8fafc;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .upload-area:hover {
+            border-color: #2563eb;
+            background: #eff6ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #2563eb;
+            background: #eff6ff;
+        }
+
+        .upload-icon {
+            width: 56px;
+            height: 56px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 18px;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+        }
+
+        .upload-icon svg {
+            width: 28px;
+            height: 28px;
+            stroke: #2563eb;
+            stroke-width: 2;
+            fill: none;
+        }
+
+        .upload-text {
+            font-size: 16px;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 6px;
+        }
+
+        .upload-subtext {
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 20px;
+        }
+
+        .upload-btn {
+            padding: 11px 24px;
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .upload-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .image-preview {
+            display: none;
+            margin-top: 28px;
+        }
+
+        .image-preview.active {
+            display: block;
+        }
+
+        .preview-container {
+            display: flex;
+            gap: 24px;
+            align-items: flex-start;
+        }
+
+        .preview-image-wrapper {
+            flex: 1;
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #f1f5f9;
+            max-width: 500px;
+        }
+
+        .preview-image {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .preview-actions {
+            flex: 0 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .action-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+            white-space: nowrap;
+        }
+
+        .detect-btn {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .detect-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+        }
+
+        .remove-btn {
+            background: white;
+            color: #ef4444;
+            border: 1.5px solid #fecaca;
+        }
+
+        .remove-btn:hover {
+            background: #fef2f2;
+            border-color: #fca5a5;
+        }
+
+        .results-section {
+            display: none;
+            margin-top: 28px;
+        }
+
+        .results-section.active {
+            display: block;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 28px;
+        }
+
+        .result-card {
+            background: white;
+            border-radius: 16px;
+            padding: 28px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+            border: 1px solid #e2e8f0;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 17px;
+            font-weight: 700;
+            color: #0f172a;
+            letter-spacing: -0.2px;
+        }
+
+        .card-badge {
+            padding: 5px 12px;
+            background: #eff6ff;
+            color: #2563eb;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .annotated-image-wrapper {
+            border-radius: 10px;
+            overflow: hidden;
+            background: #f1f5f9;
+        }
+
+        .annotated-image {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        .results-table thead {
+            background: #f8fafc;
+        }
+
+        .results-table th {
+            padding: 14px 16px;
+            text-align: left;
+            font-weight: 600;
+            color: #475569;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+        }
+
+        .results-table th:hover {
+            background: #f1f5f9;
+        }
+
+        .sort-icon {
+            display: inline-block;
+            margin-left: 6px;
+            opacity: 0.4;
+            font-size: 11px;
+        }
+
+        .results-table th.sorted .sort-icon {
+            opacity: 1;
+        }
+
+        .results-table td {
+            padding: 14px 16px;
+            border-top: 1px solid #e2e8f0;
+            color: #334155;
+        }
+
+        .results-table tbody tr:hover {
+            background: #f8fafc;
+        }
+
+        .object-class {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            background: #f1f5f9;
+            color: #475569;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 13px;
+        }
+
+        .confidence-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .confidence-progress {
+            flex: 1;
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+            border-radius: 3px;
+            transition: width 0.4s ease;
+        }
+
+        .confidence-value {
+            font-weight: 600;
+            color: #0f172a;
+            font-size: 13px;
+            min-width: 45px;
+        }
+
+        .bbox-coords {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .qa-section {
+            background: white;
+            border-radius: 16px;
+            padding: 28px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+            border: 1px solid #e2e8f0;
+        }
+
+        .qa-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .qa-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .qa-icon svg {
+            width: 22px;
+            height: 22px;
+            stroke: white;
+            stroke-width: 2.5;
+            fill: none;
+        }
+
+        .chat-container {
+            max-height: 320px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .chat-message {
+            margin-bottom: 16px;
+            display: flex;
+            gap: 12px;
+        }
+
+        .chat-message.user {
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+
+        .message-avatar.user {
+            background: linear-gradient(135deg, #ec4899 0%, #be185d 100%);
+            color: white;
+        }
+
+        .message-avatar.ai {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: white;
+        }
+
+        .message-content {
+            max-width: 75%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .chat-message.user .message-content {
+            background: #2563eb;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .chat-message.ai .message-content {
+            background: white;
+            color: #334155;
+            border: 1px solid #e2e8f0;
+            border-bottom-left-radius: 4px;
+        }
+
+        .qa-input-wrapper {
+            display: flex;
+            gap: 12px;
+        }
+
+        .qa-input {
+            flex: 1;
+            padding: 13px 18px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        .qa-input:focus {
+            outline: none;
+            border-color: #8b5cf6;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
+
+        .qa-submit {
+            padding: 13px 24px;
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+            white-space: nowrap;
+        }
+
+        .qa-submit:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(139, 92, 246, 0.3);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 32px;
+            color: #94a3b8;
+        }
+
+        .empty-state svg {
+            width: 48px;
+            height: 48px;
+            stroke: #cbd5e1;
+            stroke-width: 1.5;
+            fill: none;
+            margin: 0 auto 16px;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+        }
+
+        @media (max-width: 1024px) {
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .preview-container {
+                flex-direction: column;
+            }
+
+            .preview-image-wrapper {
+                max-width: 100%;
+            }
+
+            .preview-actions {
+                flex-direction: row;
+                width: 100%;
+            }
+
+            .action-btn {
+                flex: 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                padding: 0 20px;
+            }
+
+            .main-content {
+                padding: 20px;
+            }
+
+            .upload-section,
+            .result-card,
+            .qa-section {
+                padding: 24px 20px;
+            }
+
+            .user-details {
+                display: none;
+            }
+
+            .table-wrapper {
+                font-size: 13px;
+            }
+
+            .results-table th,
+            .results-table td {
+                padding: 10px 12px;
+            }
+
+            .message-content {
+                max-width: 85%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .logo h1 {
+                font-size: 16px;
+            }
+
+            .section-title {
+                font-size: 18px;
+            }
+
+            .upload-area {
+                padding: 32px 20px;
+            }
+
+            .qa-input-wrapper {
+                flex-direction: column;
+            }
+
+            .qa-submit {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"></path>
+                        <circle cx="12" cy="13" r="4"></circle>
+                    </svg>
+                </div>
+                <h1>AI Vision Platform</h1>
+            </div>
+            <div class="user-menu">
+                <div class="user-info">
+                    <div class="avatar">JD</div>
+                    <div class="user-details">
+                        <div class="user-name">John Doe</div>
+                        <div class="user-email">john.doe@example.com</div>
+                    </div>
+                </div>
+                <button class="logout-btn">Logout</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <section class="upload-section">
+            <h2 class="section-title">Upload Image for Detection</h2>
+            <p class="section-subtitle">Upload an image to detect objects using our advanced YOLO model</p>
+            
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                </div>
+                <div class="upload-text">Drop your image here</div>
+                <div class="upload-subtext">or click to browse (PNG, JPG, JPEG up to 10MB)</div>
+                <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                    Select Image
+                </button>
+                <input type="file" id="fileInput" class="file-input" accept="image/*">
+            </div>
+
+            <div class="image-preview" id="imagePreview">
+                <div class="preview-container">
+                    <div class="preview-image-wrapper">
+                        <img src="" alt="Preview" class="preview-image" id="previewImg">
+                    </div>
+                    <div class="preview-actions">
+                        <button class="action-btn detect-btn">Detect Objects</button>
+                        <button class="action-btn remove-btn" onclick="removeImage()">Remove Image</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="results-section active" id="resultsSection">
+            <div class="results-grid">
+                <div class="result-card">
+                    <div class="card-header">
+                        <h3 class="card-title">Annotated Image</h3>
+                        <span class="card-badge">5 Objects</span>
+                    </div>
+                    <div class="annotated-image-wrapper">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400' viewBox='0 0 600 400'%3E%3Crect fill='%23f1f5f9' width='600' height='400'/%3E%3Crect x='80' y='120' width='180' height='160' fill='none' stroke='%2310b981' stroke-width='3' stroke-dasharray='8 4'/%3E%3Ctext x='90' y='145' font-family='Arial' font-size='14' font-weight='bold' fill='%2310b981'%3ECar (0.94)%3C/text%3E%3Crect x='340' y='80' width='140' height='180' fill='none' stroke='%232563eb' stroke-width='3' stroke-dasharray='8 4'/%3E%3Ctext x='350' y='105' font-family='Arial' font-size='14' font-weight='bold' fill='%232563eb'%3EPerson (0.89)%3C/text%3E%3Crect x='150' y='260' width='100' height='80' fill='none' stroke='%23f59e0b' stroke-width='3' stroke-dasharray='8 4'/%3E%3Ctext x='160' y='285' font-family='Arial' font-size='14' font-weight='bold' fill='%23f59e0b'%3EBike (0.87)%3C/text%3E%3Crect x='380' y='280' width='120' height='90' fill='none' stroke='%23ec4899' stroke-width='3' stroke-dasharray='8 4'/%3E%3Ctext x='390' y='305' font-family='Arial' font-size='14' font-weight='bold' fill='%23ec4899'%3ESign (0.76)%3C/text%3E%3Crect x='20' y='30' width='80' height='60' fill='none' stroke='%238b5cf6' stroke-width='3' stroke-dasharray='8 4'/%3E%3Ctext x='30' y='55' font-family='Arial' font-size='14' font-weight='bold' fill='%238b5cf6'%3ETree (0.82)%3C/text%3E%3C/svg%3E" alt="Annotated" class="annotated-image">
+                    </div>
+                </div>
+
+                <div class="result-card">
+                    <div class="card-header">
+                        <h3 class="card-title">Detection Results</h3>
+                        <span class="card-badge">Sortable</span>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="results-table">
+                            <thead>
+                                <tr>
+                                    <th onclick="sortTable(0)">Object<span class="sort-icon">▼</span></th>
+                                    <th onclick="sortTable(1)">Confidence<span class="sort-icon">▼</span></th>
+                                    <th onclick="sortTable(2)">Bounding Box<span class="sort-icon">▼</span></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><span class="object-class">Car</span></td>
+                                    <td>
+                                        <div class="confidence-bar">
+                                            <div class="confidence-progress">
+                                                <div class="confidence-fill" style="width: 94%"></div>
+                                            </div>
+                                            <span class="confidence-value">94%</span>
+                                        </div>
+                                    </td>
+                                    <td><span class="bbox-coords">(80, 120, 260, 280)</span></td>
+                                </tr>
+                                <tr>
+                                    <td><span class="object-class">Person</span></td>
+                                    <td>
+                                        <div class="confidence-bar">
+                                            <div class="confidence-progress">
+                                                <div class="confidence-fill" style="width: 89%"></div>
+                                            </div>
+                                            <span class="confidence-value">89%</span>
+                                        </div>
+                                    </td>
+                                    <td><span class="bbox-coords">(340, 80, 480, 260)</span></td>
+                                </tr>
+                                <tr>
+                                    <td><span class="object-class">Bike</span></td>
+                                    <td>
+                                        <div class="confidence-bar">
+                                            <div class="confidence-progress">
+                                                <div class="confidence-fill" style="width: 87%"></div>
+                                            </div>
+                                            <span class="confidence-value">87%</span>
+                                        </div>
+                                    </td>
+                                    <td><span class="bbox-coords">(150, 260, 250, 340)</span></td>
+                                </tr>
+                                <tr>
+                                    <td><span class="object-class">Tree</span></td>
+                                    <td>
+                                        <div class="confidence-bar">
+                                            <div class="confidence-progress">
+                                                <div class="confidence-fill" style="width: 82%"></div>
+                                            </div>
+                                            <span class="confidence-value">82%</span>
+                                        </div>
+                                    </td>
+                                    <td><span class="bbox-coords">(20, 30, 100, 90)</span></td>
+                                </tr>
+                                <tr>
+                                    <td><span class="object-class">Sign</span></td>
+                                    <td>
+                                        <div class="confidence-bar">
+                                            <div class="confidence-progress">
+                                                <div class="confidence-fill" style="width: 76%"></div>
+                                            </div>
+                                            <span class="confidence-value">76%</span>
+                                        </div>
+                                    </td>
+                                    <td><span class="bbox-coords">(380, 280, 500, 370)</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="qa-section">
+                <div class="qa-header">
+                    <div class="qa-icon">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="card-title">Ask Questions About Results</h3>
+                        <p class="section-subtitle" style="margin: 0;">Powered by Gemini 2.5 Flash</p>
+                    </div>
+                </div>
+
+                <div class="chat-container">
+                    <div class="chat-message user">
+                        <div class="message-avatar user">JD</div>
+                        <div class="message-content">What is the confidence score of the largest object?</div>
+                    </div>
+                    <div class="chat-message ai">
+                        <div class="message-avatar ai">AI</div>
+                        <div class="message-content">Based on the detection results, the largest object is the Car with a bounding box of (80, 120, 260, 280), which has dimensions of 180x160 pixels. This car has a confidence score of 94%, making it the most confidently detected object in the image.</div>
+                    </div>
+                    <div class="chat-message user">
+                        <div class="message-avatar user">JD</div>
+                        <div class="message-content">How many objects were detected with confidence above 85%?</div>
+                    </div>
+                    <div class="chat-message ai">
+                        <div class="message-avatar ai">AI</div>
+                        <div class="message-content">There are 3 objects detected with confidence above 85%: Car (94%), Person (89%), and Bike (87%). These represent the most reliable detections in your image.</div>
+                    </div>
+                </div>
+
+                <div class="qa-input-wrapper">
+                    <input type="text" class="qa-input" placeholder="Ask a question about the detected objects...">
+                    <button class="qa-submit">Send</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // File upload handling
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const imagePreview = document.getElementById('imagePreview');
+        const previewImg = document.getElementById('previewImg');
+
+        uploadArea.addEventListener('click', (e) => {
+            if (e.target !== fileInput) {
+                fileInput.click();
+            }
+        });
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                handleFile(file);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        });
+
+        function handleFile(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImg.src = e.target.result;
+                imagePreview.classList.add('active');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeImage() {
+            fileInput.value = '';
+            previewImg.src = '';
+            imagePreview.classList.remove('active');
+        }
+
+        // Table sorting
+        function sortTable(columnIndex) {
+            const table = document.querySelector('.results-table');
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            const th = table.querySelectorAll('th')[columnIndex];
+            const isAscending = th.classList.contains('sorted') && th.querySelector('.sort-icon').textContent === '▲';
+
+            // Remove sorted class from all headers
+            table.querySelectorAll('th').forEach(header => {
+                header.classList.remove('sorted');
+                header.querySelector('.sort-icon').textContent = '▼';
+            });
+
+            // Sort rows
+            rows.sort((a, b) => {
+                let aValue, bValue;
+
+                if (columnIndex === 0) { // Object name
+                    aValue = a.cells[columnIndex].textContent.trim();
+                    bValue = b.cells[columnIndex].textContent.trim();
+                    return isAscending ? bValue.localeCompare(aValue) : aValue.localeCompare(bValue);
+                } else if (columnIndex === 1) { // Confidence
+                    aValue = parseFloat(a.cells[columnIndex].querySelector('.confidence-value').textContent);
+                    bValue = parseFloat(b.cells[columnIndex].querySelector('.confidence-value').textContent);
+                    return isAscending ? aValue - bValue : bValue - aValue;
+                } else if (columnIndex === 2) { // Bounding box
+                    aValue = a.cells[columnIndex].textContent.trim();
+                    bValue = b.cells[columnIndex].textContent.trim();
+                    return isAscending ? bValue.localeCompare(aValue) : aValue.localeCompare(bValue);
+                }
+            });
+
+            // Update table
+            rows.forEach(row => tbody.appendChild(row));
+
+            // Update sorted indicator
+            th.classList.add('sorted');
+            th.querySelector('.sort-icon').textContent = isAscending ? '▼' : '▲';
+        }
+
+        // Chat scroll to bottom
+        const chatContainer = document.querySelector('.chat-container');
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    </script>
+</body>
+</html>
