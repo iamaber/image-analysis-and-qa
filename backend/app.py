@@ -2,9 +2,8 @@ from io import BytesIO
 from typing import List, Dict
 import base64
 import asyncio
-import uuid  # Added for session management
 
-from fastapi import FastAPI, UploadFile, File, HTTPException, Body
+from fastapi import FastAPI, UploadFile, File, HTTPException
 from PIL import Image
 from ultralytics import YOLO
 from pydantic_ai import Agent
@@ -16,24 +15,15 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Load the YOLO model (using a lightweight pre-trained model)
-model = YOLO("yolo11n.pt")  # Switched to nano for lighter weight; change back if needed
+model = YOLO("yolo11m.pt")
 
-# In-memory storage for detections (session-based)
-detections_store: Dict[str, List[Dict]] = {}
+# Pydantic AI will handle the API key via environment variable
 
-
-# Define Pydantic models
-class DetectionResponse(BaseModel):
-    image: str  # base64 encoded annotated image
-    detections: List[Dict]
-    session_id: str  # Added to track session
+# Global variable to store last detections
+last_detections: List[Dict] = []
 
 
-class QueryRequest(BaseModel):
-    query: str
-    session_id: str  # Required to fetch the correct detections
-
-
+# Define Pydantic model for RAG response
 class AnswerResponse(BaseModel):
     answer: str
     sources: List[str]
@@ -58,6 +48,10 @@ def detect_objects(image: Image.Image) -> tuple[Image.Image, List[Dict]]:
             }
             detections.append(det)
 
+    # Store detections globally
+    global last_detections
+    last_detections = detections
+
     return annotated_img, detections
 
 
@@ -65,28 +59,17 @@ def detect_objects(image: Image.Image) -> tuple[Image.Image, List[Dict]]:
 app = FastAPI(
     title="YOLO Object Detection and RAG API",
     version="1.0.0",
-    description="API for object detection in images using YOLO and querying detection results via AI.",
 )
 
 
-@app.post("/detect", response_model=DetectionResponse)
+@app.post("/detect")
 async def detect_endpoint(file: UploadFile = File(...)):
-    try:
-        # Read the uploaded file
-        contents = await file.read()
-        input_img = Image.open(BytesIO(contents))
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Invalid image file: {str(e)}")
+    # Read the uploaded file
+    contents = await file.read()
+    input_img = Image.open(BytesIO(contents))
 
-    # Perform detection in a separate thread to avoid blocking
-    try:
-        annotated_img, detections = await asyncio.to_thread(detect_objects, input_img)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Detection failed: {str(e)}")
-
-    # Generate a unique session ID and store detections
-    session_id = str(uuid.uuid4())
-    detections_store[session_id] = detections
+    # Perform detection asynchronously
+    annotated_img, detections = await asyncio.to_thread(detect_objects, input_img)
 
     # Encode annotated image to base64
     buffer = BytesIO()
@@ -95,68 +78,45 @@ async def detect_endpoint(file: UploadFile = File(...)):
     img_base64 = base64.b64encode(img_bytes).decode("utf-8")
 
     # Return JSON response
-    return DetectionResponse(
-        image=f"data:image/png;base64,{img_base64}",
-        detections=detections,
-        session_id=session_id,
-    )
+    return {"image": f"data:image/png;base64,{img_base64}", "detections": detections}
 
 
-@app.post("/query", response_model=AnswerResponse)
-async def query_rag(request: QueryRequest = Body(...)):
+@app.post("/query")
+async def query_rag(query: str):
     """
     Endpoint to query the RAG system about image detection results.
 
-    - Requires session_id from /detect response.
     - query: The question about image detection data.
     - Returns a JSON with answer and sources.
     """
-    if not request.query.strip():
+    if not query.strip():
         raise HTTPException(status_code=400, detail="Query cannot be empty")
 
-    # Fetch detections using session_id
-    detections = detections_store.get(request.session_id)
-    if not detections:
-        raise HTTPException(
-            status_code=404,
-            detail="No detection data found for this session. Please upload an image first.",
+    # Use last detections as context
+    global last_detections
+    if not last_detections:
+        return AnswerResponse(
+            answer="No detection data available. Please upload an image first.",
+            sources=[],
         )
 
-    # Build context from detections
-    context_lines = [
+    context = "\n".join(
         f"Detected {d['class_name']} with confidence {d['confidence']:.2f} at bounding box {d['bounding_box']}"
-        for d in detections
-    ]
-    context = "\n".join(context_lines)
-
-    # Improved prompt: More structured, handles edge cases better
-    prompt = (
-        "You are an expert analyst for image object detection results. "
-        "Answer only questions directly related to the provided detection data, such as confidence scores, number of objects, bounding boxes, class names, or simple aggregations (e.g., count of specific objects). "
-        "Do not speculate, add external knowledge, or answer unrelated questions. "
-        "If the query is not related to the detection data, respond exactly with: 'I can only answer questions about image detection results.'\n\n"
-        f"Detection Data:\n{context}\n\nQuery: {request.query}"
+        for d in last_detections
     )
 
-    # Initialize agent with settings
+    prompt = (
+        "You are an expert in image object detection results. "
+        "Only answer questions related to image detection data such as confidence scores, number of objects, bounding boxes, etc. "
+        "If the query is not related, say 'I can only answer questions about image detection results.'\n\n"
+        f"Information:\n{context}\n\nQuery: {query}"
+    )
+
     agent = Agent(
         "google-gla:gemini-2.5-flash",
         model_settings=ModelSettings(temperature=0.2, max_tokens=150),
     )
-
-    try:
-        result = await agent.run(prompt)
-        # Assuming result is an AnswerResponse-like structure; adjust if pydantic_ai returns differently
-        return result
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Query processing failed: {str(e)}"
-        )
+    result = await agent.run(prompt)
+    return result
 
 
-# Optional: Cleanup old sessions periodically (not implemented here, but could use a background task)
-
-if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run(app, host="0.0.0.0", port=8006)
