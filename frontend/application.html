@@ -898,6 +898,67 @@
     </main>
 
     <script>
+        // Authentication and user management
+        function getToken() {
+            return localStorage.getItem('access_token');
+        }
+
+        function getUserInfo() {
+            const userInfo = localStorage.getItem('user_info');
+            return userInfo ? JSON.parse(userInfo) : null;
+        }
+
+        function setUserInfo(user) {
+            localStorage.setItem('user_info', JSON.stringify(user));
+        }
+
+        function getInitials(name) {
+            return name
+                .split(' ')
+                .map(n => n[0])
+                .join('')
+                .toUpperCase()
+                .substring(0, 2);
+        }
+
+        // Check authentication on page load
+        async function checkAuth() {
+            const token = getToken();
+            if (!token) {
+                window.location.href = '/';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/verify`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Invalid token');
+                }
+
+                const user = await response.json();
+                setUserInfo(user);
+                updateUserDisplay(user);
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                localStorage.removeItem('access_token');
+                localStorage.removeItem('user_info');
+                window.location.href = '/';
+            }
+        }
+
+        function updateUserDisplay(user) {
+            const initials = getInitials(user.name);
+            document.querySelector('.avatar').textContent = initials;
+            document.querySelector('.user-name').textContent = user.name;
+            document.querySelector('.user-email').textContent = user.email;
+        }
+
         // Global variables
         let currentFile = null;
         let detectionResults = [];
@@ -1152,7 +1213,13 @@
             
             const avatar = document.createElement('div');
             avatar.className = `message-avatar ${type}`;
-            avatar.textContent = type === 'user' ? 'JD' : 'AI';
+            
+            if (type === 'user') {
+                const userInfo = getUserInfo();
+                avatar.textContent = userInfo ? getInitials(userInfo.name) : 'U';
+            } else {
+                avatar.textContent = 'AI';
+            }
             
             const content = document.createElement('div');
             content.className = 'message-content';
@@ -1168,6 +1235,16 @@
 
         // Initialize - hide results section on load
         resultsSection.classList.remove('active');
+
+        // Check authentication on page load
+        checkAuth();
+
+        // Logout functionality
+        document.querySelector('.logout-btn').addEventListener('click', function() {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('user_info');
+            window.location.href = '/';
+        });
     </script>
 </body>
 </html>

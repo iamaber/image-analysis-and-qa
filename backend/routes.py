@@ -113,4 +113,4 @@ async def query_rag(request: QueryRequest):
     result = await agent.run(prompt)
     # Extract just the text output from the result
     answer_text = result.output
-    return answer_text
+    return {"data": answer_text, "sources": []}
