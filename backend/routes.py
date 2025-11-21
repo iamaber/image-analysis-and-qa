@@ -107,7 +107,7 @@ async def query_rag(request: QueryRequest):
     model = GoogleModel("gemini-2.5-flash", provider=provider)
     agent = Agent(
         model,
-        model_settings=ModelSettings(temperature=0.3, max_tokens=200),
+        model_settings=ModelSettings(temperature=0.3, max_tokens=300),
     )
 
     result = await agent.run(prompt)
