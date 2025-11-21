@@ -5,6 +5,7 @@ import asyncio
 from typing import List, Dict
 
 from fastapi import UploadFile, File, HTTPException
+from pydantic import BaseModel
 from PIL import Image
 from ultralytics import YOLO
 from pydantic_ai import Agent
@@ -13,7 +14,11 @@ from pydantic_ai.providers.google import GoogleProvider
 from pydantic_ai.models.google import GoogleModel
 from dotenv import load_dotenv
 
-from .models import AnswerResponse
+
+# Request model for query endpoint
+class QueryRequest(BaseModel):
+    query: str
+
 
 # Load environment variables from .env file
 load_dotenv()
@@ -69,23 +74,24 @@ async def detect_endpoint(file: UploadFile = File(...)):
     return {"image": f"data:image/png;base64,{img_base64}", "detections": detections}
 
 
-async def query_rag(query: str):
+async def query_rag(request: QueryRequest):
     """
     Endpoint to query the RAG system about image detection results.
 
     - query: The question about image detection data.
     - Returns a JSON with answer and sources.
     """
+    query = request.query
     if not query.strip():
         raise HTTPException(status_code=400, detail="Query cannot be empty")
 
     # Use last detections as context
     global last_detections
     if not last_detections:
-        return AnswerResponse(
-            answer="No detection data available. Please upload an image first.",
-            sources=[],
-        )
+        return {
+            "data": "No detection data available. Please upload an image first.",
+            "sources": [],
+        }
 
     context = "\n".join(
         f"Detected {d['class_name']} with confidence {d['confidence']:.2f} at bounding box {d['bounding_box']}"
@@ -105,4 +111,6 @@ async def query_rag(query: str):
     )
 
     result = await agent.run(prompt)
-    return result
+    # Extract just the text output from the result
+    answer_text = result.output
+    return answer_text

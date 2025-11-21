@@ -898,11 +898,18 @@
     </main>
 
     <script>
+        // Global variables
+        let currentFile = null;
+        let detectionResults = [];
+        const API_BASE_URL = 'http://localhost:8000';
+
         // File upload handling
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
         const imagePreview = document.getElementById('imagePreview');
         const previewImg = document.getElementById('previewImg');
+        const detectBtn = document.querySelector('.detect-btn');
+        const resultsSection = document.getElementById('resultsSection');
 
         uploadArea.addEventListener('click', (e) => {
             if (e.target !== fileInput) {
@@ -936,18 +943,102 @@
         });
 
         function handleFile(file) {
+            currentFile = file;
             const reader = new FileReader();
             reader.onload = (e) => {
                 previewImg.src = e.target.result;
                 imagePreview.classList.add('active');
+                resultsSection.classList.remove('active');
             };
             reader.readAsDataURL(file);
         }
 
         function removeImage() {
+            currentFile = null;
             fileInput.value = '';
             previewImg.src = '';
             imagePreview.classList.remove('active');
+            resultsSection.classList.remove('active');
+            detectionResults = [];
+        }
+
+        // Detect Objects button handler
+        detectBtn.addEventListener('click', async () => {
+            if (!currentFile) {
+                alert('Please select an image first');
+                return;
+            }
+
+            detectBtn.disabled = true;
+            detectBtn.textContent = 'Processing...';
+
+            try {
+                const formData = new FormData();
+                formData.append('file', currentFile);
+
+                const response = await fetch(`${API_BASE_URL}/detect`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error('Detection failed');
+                }
+
+                const data = await response.json();
+                detectionResults = data.detections;
+                
+                // Display results
+                displayResults(data.image, data.detections);
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to detect objects. Make sure the backend server is running.');
+            } finally {
+                detectBtn.disabled = false;
+                detectBtn.textContent = 'Detect Objects';
+            }
+        });
+
+        function displayResults(annotatedImageBase64, detections) {
+            // Show results section
+            resultsSection.classList.add('active');
+
+            // Update annotated image
+            const annotatedImg = document.querySelector('.annotated-image');
+            annotatedImg.src = annotatedImageBase64;
+
+            // Update badge with object count
+            const badge = document.querySelector('.card-badge');
+            badge.textContent = `${detections.length} Object${detections.length !== 1 ? 's' : ''}`;
+
+            // Update table
+            const tbody = document.querySelector('.results-table tbody');
+            tbody.innerHTML = '';
+
+            detections.forEach(det => {
+                const row = document.createElement('tr');
+                const confidence = (det.confidence * 100).toFixed(0);
+                const bbox = det.bounding_box.map(v => Math.round(v)).join(', ');
+
+                row.innerHTML = `
+                    <td><span class="object-class">${det.class_name}</span></td>
+                    <td>
+                        <div class="confidence-bar">
+                            <div class="confidence-progress">
+                                <div class="confidence-fill" style="width: ${confidence}%"></div>
+                            </div>
+                            <span class="confidence-value">${confidence}%</span>
+                        </div>
+                    </td>
+                    <td><span class="bbox-coords">(${bbox})</span></td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // Clear chat
+            const chatContainer = document.querySelector('.chat-container');
+            chatContainer.innerHTML = '<div class="empty-state"><p>Ask a question about the detected objects</p></div>';
         }
 
         // Table sorting
@@ -991,9 +1082,92 @@
             th.querySelector('.sort-icon').textContent = isAscending ? '▼' : '▲';
         }
 
-        // Chat scroll to bottom
+        // Q&A functionality
+        const qaInput = document.querySelector('.qa-input');
+        const qaSubmit = document.querySelector('.qa-submit');
         const chatContainer = document.querySelector('.chat-container');
-        chatContainer.scrollTop = chatContainer.scrollHeight;
+
+        qaSubmit.addEventListener('click', () => sendQuestion());
+        qaInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendQuestion();
+            }
+        });
+
+        async function sendQuestion() {
+            const question = qaInput.value.trim();
+            if (!question) return;
+
+            if (detectionResults.length === 0) {
+                alert('Please detect objects first before asking questions');
+                return;
+            }
+
+            // Clear empty state if present
+            if (chatContainer.querySelector('.empty-state')) {
+                chatContainer.innerHTML = '';
+            }
+
+            // Add user message
+            addMessage(question, 'user');
+            qaInput.value = '';
+
+            // Disable input while processing
+            qaInput.disabled = true;
+            qaSubmit.disabled = true;
+            qaSubmit.textContent = 'Thinking...';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/query`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ query: question })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Query failed');
+                }
+
+                const data = await response.json();
+                const answer = data.data || data.answer || 'No response received';
+                
+                // Add AI response
+                addMessage(answer, 'ai');
+
+            } catch (error) {
+                console.error('Error:', error);
+                addMessage('Sorry, I encountered an error processing your question. Please try again.', 'ai');
+            } finally {
+                qaInput.disabled = false;
+                qaSubmit.disabled = false;
+                qaSubmit.textContent = 'Send';
+            }
+        }
+
+        function addMessage(text, type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${type}`;
+            
+            const avatar = document.createElement('div');
+            avatar.className = `message-avatar ${type}`;
+            avatar.textContent = type === 'user' ? 'JD' : 'AI';
+            
+            const content = document.createElement('div');
+            content.className = 'message-content';
+            content.textContent = text;
+            
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(content);
+            chatContainer.appendChild(messageDiv);
+            
+            // Scroll to bottom
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // Initialize - hide results section on load
+        resultsSection.classList.remove('active');
     </script>
 </body>
 </html>
