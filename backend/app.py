@@ -1,4 +1,5 @@
 from io import BytesIO
+import os
 from typing import List, Dict
 import base64
 import asyncio
@@ -8,6 +9,8 @@ from PIL import Image
 from ultralytics import YOLO
 from pydantic_ai import Agent
 from pydantic_ai.settings import ModelSettings
+from pydantic_ai.providers.google import GoogleProvider
+from pydantic_ai.models.google import GoogleModel
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
@@ -107,16 +110,13 @@ async def query_rag(query: str):
 
     prompt = (
         "You are an expert in image object detection results. "
-        "Only answer questions related to image detection data such as confidence scores, number of objects, bounding boxes, etc. "
+        "Only answer questions related to image or picture detection data such as confidence scores, number of objects, bounding boxes, etc. "
         "If the query is not related, say 'I can only answer questions about image detection results.'\n\n"
         f"Information:\n{context}\n\nQuery: {query}"
     )
+    provider = GoogleProvider(api_key=os.getenv("GOOGLE_API_KEY"))
+    model = GoogleModel("gemini-2.5-flash", provider=provider)
+    agent = Agent(model, model_settings=ModelSettings(temperature=0.3, max_tokens=150))
 
-    agent = Agent(
-        "google-gla:gemini-2.5-flash",
-        model_settings=ModelSettings(temperature=0.2, max_tokens=150),
-    )
     result = await agent.run(prompt)
     return result
-
-
