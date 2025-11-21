@@ -647,6 +647,203 @@
                 }
             });
         });
+
+        // API Configuration
+        const API_BASE_URL = window.location.origin;
+
+        // Token management
+        function getToken() {
+            return localStorage.getItem('access_token');
+        }
+
+        function setToken(token) {
+            localStorage.setItem('access_token', token);
+        }
+
+        function removeToken() {
+            localStorage.removeItem('access_token');
+        }
+
+        // API helper function
+        async function apiCall(endpoint, options = {}) {
+            const token = getToken();
+            const headers = {
+                'Content-Type': 'application/json',
+                ...options.headers
+            };
+
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                    ...options,
+                    headers
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || 'An error occurred');
+                }
+
+                return data;
+            } catch (error) {
+                throw error;
+            }
+        }
+
+        // Show notification
+        function showNotification(message, type = 'success') {
+            // Remove existing notifications
+            const existingNotifications = document.querySelectorAll('.notification');
+            existingNotifications.forEach(notification => notification.remove());
+
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 12px 20px;
+                border-radius: 8px;
+                color: white;
+                font-weight: 500;
+                z-index: 1000;
+                animation: slideIn 0.3s ease;
+                background-color: ${type === 'success' ? '#10B981' : '#EF4444'};
+            `;
+
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // Add CSS for animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Check if user is already logged in
+        function checkAuth() {
+            const token = getToken();
+            if (token) {
+                // Verify token with backend
+                apiCall('/auth/verify', { method: 'POST' })
+                    .then(user => {
+                        // Redirect to dashboard or main application
+                        window.location.href = '/application.html';
+                    })
+                    .catch(() => {
+                        removeToken();
+                    });
+            }
+        }
+
+        // Form submission handlers
+        document.querySelector('.login-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            if (!email || !password) {
+                showNotification('Please fill in all fields', 'error');
+                return;
+            }
+
+            try {
+                const response = await apiCall('/auth/login', {
+                    method: 'POST',
+                    body: JSON.stringify({ email, password })
+                });
+
+                setToken(response.access_token);
+                showNotification('Login successful!', 'success');
+                
+                setTimeout(() => {
+                    window.location.href = '/application.html';
+                }, 1000);
+
+            } catch (error) {
+                showNotification(error.message || 'Login failed', 'error');
+            }
+        });
+
+        document.querySelector('.signup-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('signup-name').value;
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            const confirmPassword = document.getElementById('signup-confirm').value;
+
+            if (!name || !email || !password || !confirmPassword) {
+                showNotification('Please fill in all fields', 'error');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                showNotification('Passwords do not match', 'error');
+                return;
+            }
+
+            if (password.length < 6) {
+                showNotification('Password must be at least 6 characters', 'error');
+                return;
+            }
+
+            // Check password length (bcrypt has 72-byte limit, ~72 characters for ASCII)
+            if (new TextEncoder().encode(password).length > 72) {
+                showNotification('Password cannot be longer than 72 characters', 'error');
+                return;
+            }
+
+            try {
+                await apiCall('/auth/register', {
+                    method: 'POST',
+                    body: JSON.stringify({ name, email, password })
+                });
+
+                showNotification('Account created successfully! Please login.', 'success');
+                
+                // Switch to login tab
+                switchTab('login');
+                
+            } catch (error) {
+                showNotification(error.message || 'Registration failed', 'error');
+            }
+        });
+
+        // Google OAuth placeholders (implement as needed)
+        document.querySelectorAll('.google-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                showNotification('Google OAuth integration coming soon!', 'error');
+            });
+        });
+
+        // Forgot password placeholder
+        document.querySelector('.forgot-link').addEventListener('click', function(e) {
+            e.preventDefault();
+            showNotification('Password reset feature coming soon!', 'error');
+        });
+
+        // Check authentication on page load
+        checkAuth();
     </script>
 </body>
 </html>
