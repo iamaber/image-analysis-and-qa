@@ -24,7 +24,9 @@ class QueryRequest(BaseModel):
 load_dotenv()
 
 # Load the YOLO model (using a lightweight pre-trained model)
-model = YOLO("yolo11m.pt")
+# Use environment variable for model path, default to yolo11m.pt for local dev
+model_path = os.getenv("YOLO_MODEL_PATH", "yolo11m.pt")
+model = YOLO(model_path)
 
 # Global variable to store last detections
 last_detections: List[Dict] = []

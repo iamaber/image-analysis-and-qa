@@ -14,7 +14,9 @@ import sqlite3
 
 
 # Database configuration
-DATABASE_URL = "sqlite:///./users.db"
+# Use /app/data directory in container, current directory otherwise
+db_dir = os.getenv("DB_DIR", ".")
+DATABASE_URL = f"sqlite:///{db_dir}/users.db"
 
 # Create engine
 engine = create_engine(
@@ -50,7 +52,8 @@ def recreate_tables():
 def check_and_update_schema():
     """Check if the database schema matches the model and update if needed."""
     # Check if the database file exists
-    db_path = "./users.db"
+    db_dir = os.getenv("DB_DIR", ".")
+    db_path = f"{db_dir}/users.db"
     if not os.path.exists(db_path):
         print("Creating new database...")
         create_tables()

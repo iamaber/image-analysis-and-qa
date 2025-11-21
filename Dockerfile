@@ -42,6 +42,17 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # Place executables in the environment at the front of the path
 ENV PATH="/app/.venv/bin:$PATH"
 
+# Create directories for YOLO models, Ultralytics config, and database
+RUN mkdir -p /app/models /app/.ultralytics /app/data && \
+    /app/.venv/bin/python -c "from ultralytics import YOLO; YOLO('yolo11m.pt')" && \
+    mv yolo11m.pt /app/models/ && \
+    chown -R nonroot:nonroot /app/models /app/.ultralytics /app/data
+
+# Set environment variables for model path, config directory, and database
+ENV YOLO_MODEL_PATH=/app/models/yolo11m.pt
+ENV YOLO_CONFIG_DIR=/app/.ultralytics
+ENV DB_DIR=/app/data
+
 # Reset the entrypoint, don't invoke `uv`
 ENTRYPOINT []
 
