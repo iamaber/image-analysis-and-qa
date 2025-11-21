@@ -2,7 +2,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .routes import detect_endpoint, query_rag
 from .auth_routes import router as auth_router
-from .database import create_tables
 
 # Create FastAPI app
 app = FastAPI(
@@ -29,9 +28,9 @@ def startup_event():
     check_and_update_schema()
 
 
+# Add authentication routes
+app.include_router(auth_router)
+
 # Add routes
 app.post("/detect")(detect_endpoint)
 app.post("/query")(query_rag)
-
-# Add authentication routes
-app.include_router(auth_router)
