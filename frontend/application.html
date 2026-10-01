@@ -897,6 +897,8 @@
                     <span class="panel-badge" id="chatBadge">no context</span>
                 </div>
 
+                <div class="inline-error hidden" id="configNotice"></div>
+
                 <div class="chat-body" id="chatStream">
                     <div class="chat-empty" id="chatEmptyState">
                         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -931,6 +933,7 @@
             detections: [],
             annotatedImage: "",
             messages: [],
+            qaConfigured: true,
         };
 
         const el = {
@@ -969,6 +972,7 @@
             chatStatus:         document.getElementById("chatStatus"),
             imageError:         document.getElementById("imageError"),
             chatError:          document.getElementById("chatError"),
+            configNotice:       document.getElementById("configNotice"),
         };
 
         /* ─── Helpers ─── */
@@ -997,6 +1001,34 @@
         function setChip(text, active = false) {
             el.workspaceChip.textContent = text;
             el.workspaceChip.className = active ? "chip active" : "chip";
+        }
+
+        function applyQAState() {
+            if (state.qaConfigured) return;
+            el.chatInput.disabled = true;
+            el.chatSubmit.disabled = true;
+            el.chatInput.placeholder = "Question answering disabled — GROQ_API_KEY not configured";
+            el.chatStatus.textContent = "GROQ_API_KEY not configured";
+            el.chatBadge.textContent = "QA disabled";
+            el.chatBadge.className = "panel-badge";
+            showInlineError(
+                el.configNotice,
+                "Question answering needs a GROQ_API_KEY. Add it as a Space secret " +
+                "(Settings → Variables and secrets) and restart the app to enable chat. " +
+                "Object detection still works."
+            );
+        }
+
+        async function checkHealth() {
+            try {
+                const res = await fetch(`${location.origin}/health`, { cache: "no-store" });
+                if (!res.ok) return;
+                const payload = await res.json();
+                state.qaConfigured = payload.qa_configured !== false;
+            } catch (err) {
+                return;
+            }
+            applyQAState();
         }
 
         /* ─── State transitions ─── */
@@ -1055,6 +1087,7 @@
             el.chatBadge.className = "panel-badge";
             clearInlineError(el.chatError);
             resetMessages();
+            applyQAState();
         }
 
         function clearImageState() {
@@ -1115,9 +1148,13 @@
                 el.resultsBody.innerHTML = buildRows(state.detections);
                 el.imageStage.textContent = "Detection complete";
 
-                el.chatStatus.textContent = "ready — ask about objects, confidence, or bounding boxes";
-                el.chatBadge.textContent = `${state.detections.length} detections`;
-                el.chatBadge.className = "panel-badge ready";
+                if (state.qaConfigured) {
+                    el.chatStatus.textContent = "ready — ask about objects, confidence, or bounding boxes";
+                    el.chatBadge.textContent = `${state.detections.length} detections`;
+                    el.chatBadge.className = "panel-badge ready";
+                } else {
+                    applyQAState();
+                }
 
                 setChip(`${state.detections.length} detections`, true);
                 setGlobalStatus("", "ready");
@@ -1191,6 +1228,10 @@
 
         async function submitQuestion(e) {
             e.preventDefault();
+            if (!state.qaConfigured) {
+                applyQAState();
+                return;
+            }
             const query = el.chatInput.value.trim();
             if (!query) return;
             if (!state.detections.length) {
@@ -1262,6 +1303,7 @@
 
         /* Init */
         clearImageState();
+        checkHealth();
     </script>
 
 </body>

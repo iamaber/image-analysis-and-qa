@@ -2,7 +2,7 @@ import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routes import detect_endpoint, query_rag
+from .routes import detect_endpoint, qa_is_configured, query_rag
 
 
 def get_allowed_origins() -> list[str]:
@@ -31,3 +31,8 @@ app.add_middleware(
 
 app.post("/detect")(detect_endpoint)
 app.post("/query")(query_rag)
+
+
+@app.get("/health")
+async def health() -> dict[str, object]:
+    return {"status": "ok", "qa_configured": qa_is_configured()}
