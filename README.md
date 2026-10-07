@@ -1,47 +1,56 @@
 # AI Vision Workspace
 
-Single-page image analysis workspace for object detection and question answering. Upload an image, run YOLO detection, then ask follow-up questions grounded in the detection results through a `pydantic-ai` agent backed by Groq's Qwen 3 32B model.
+Single-page image analysis workspace for object detection and question answering. Upload an image, run YOLO detection, then ask follow-up questions grounded in the detection results through a `pydantic-ai` agent backed by Groq's `openai/gpt-oss-20b` model.
 
-## What Changed
-
-- Authentication and database code were removed.
-- The application opens directly into the analysis workspace at `/`.
-- `POST /query` is stateless and expects both the user question and the detection data.
-- Docker support was removed; the project is intended to run locally.
+Detection runs without any API key. Question answering requires `GROQ_API_KEY`; without it the app still starts, `/detect` works, and `/query` returns a clear `503` instead of crashing.
 
 ## Stack
 
-- FastAPI
-- Ultralytics YOLO
-- `pydantic-ai` with Groq `qwen/qwen3-32b`
-- Plain HTML, CSS, and JavaScript frontend
+- FastAPI + Uvicorn
+- Ultralytics YOLO (`yolo11m.pt`)
+- `pydantic-ai` with Groq `openai/gpt-oss-20b`
+- Single-file HTML/CSS/JavaScript frontend
 
-## Environment
-
-Create a `.env` file in the project root:
-
-```env
-GROQ_API_KEY=your_groq_api_key_here
-YOLO_MODEL_PATH=yolo11m.pt
-YOLO_CONFIG_DIR=.ultralytics
-```
-
-`YOLO_MODEL_PATH` and `YOLO_CONFIG_DIR` are optional locally. By default the model path is `yolo11m.pt` and Ultralytics config/cache data stays in `.ultralytics/` inside the project.
-
-## Run Locally
+## Quick Start
 
 ```bash
 uv sync
+cp .env.example .env          # optional; add GROQ_API_KEY for question answering
 uv run python main.py
 ```
 
 Open `http://localhost:8000`.
 
+The YOLO weights are not committed to the repository. Ultralytics downloads the stock `yolo11m.pt` on first detection (or the Docker image fetches them at build time).
+
+## Environment
+
+Copy `.env.example` to `.env` and adjust as needed.
+
+| Variable | Required | Default | Purpose |
+| --- | --- | --- | --- |
+| `GROQ_API_KEY` | For `/query` | – | Enables question answering. `/detect` works without it. |
+| `YOLO_MODEL_PATH` | No | `yolo11m.pt` | Path to the YOLO weights file. |
+| `YOLO_CONFIG_DIR` | No | `.ultralytics` | Writable directory for Ultralytics settings/cache. Falls back to a temp directory if the default is not writable. |
+| `CORS_ALLOW_ORIGINS` | No | `http://localhost:8000,http://127.0.0.1:8000` | Comma-separated list of allowed origins. |
+| `MAX_UPLOAD_BYTES` | No | `10485760` (10 MB) | Maximum accepted upload size. |
+
 ## API
+
+### `GET /health`
+
+```json
+{
+  "status": "ok",
+  "qa_configured": true
+}
+```
+
+`qa_configured` is `false` when `GROQ_API_KEY` is unset. The frontend uses it to disable the chat panel with a configuration hint.
 
 ### `POST /detect`
 
-Accepts a multipart image upload and returns:
+Multipart upload in the `file` field. Only `image/*` content types are accepted, and uploads larger than `MAX_UPLOAD_BYTES` are rejected with `413`.
 
 ```json
 {
@@ -56,9 +65,9 @@ Accepts a multipart image upload and returns:
 }
 ```
 
-### `POST /query`
+Returns `400` for non-image or unreadable uploads and `503` if the detection model cannot be loaded.
 
-Accepts:
+### `POST /query`
 
 ```json
 {
@@ -82,9 +91,38 @@ Returns:
 }
 ```
 
+`query` is limited to 2000 characters and `detections` must be non-empty (`400` otherwise). Without `GROQ_API_KEY` the endpoint returns `503` with a message explaining that question answering is not configured.
+
 ## Tests
+
+The tests mock the YOLO model, so they do not download weights or call Groq.
 
 ```bash
 uv sync
 uv run pytest
 ```
+
+## Deploying to a Hugging Face Docker Space
+
+The repository includes a `Dockerfile` for a CPU Hugging Face Docker Space (`sdk: docker`, `app_port: 7860`):
+
+- The container runs as a non-root user (UID 1000), as Hugging Face requires.
+- The app listens on `0.0.0.0:7860`.
+- Ultralytics config/cache and Matplotlib cache are redirected to writable `/tmp` directories.
+- `pyproject.toml` resolves `torch`/`torchvision` from the PyTorch CPU index on Linux. Without this, `uv sync` pulls the CUDA build of PyTorch and several GB of `nvidia-*` wheels into a CPU-only Space.
+- The stock `yolo11m.pt` weights are downloaded at image build time instead of being committed, keeping the repository and build context small.
+- Add `GROQ_API_KEY` as a Space secret (Settings → Variables and secrets). Detection works without it; the UI reports that Q&A is disabled.
+
+## Project Layout
+
+```text
+backend/        FastAPI app, routes, detection and query logic
+frontend/       Single-page application (application.html)
+main.py         Uvicorn entry point and static file mounting
+tests/          API and helper tests
+Dockerfile      Hugging Face Docker Space image
+```
+
+## License
+
+No project license has been chosen yet. Note that the runtime dependency **Ultralytics is licensed under AGPL-3.0**, and the project ships and serves it (including over a network). That has copyleft implications for distributing or hosting this application; the license choice needs the owner's decision.
