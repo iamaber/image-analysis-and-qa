@@ -4,6 +4,8 @@ Single-page image analysis workspace for object detection and question answering
 
 Detection runs without any API key. Question answering requires `GROQ_API_KEY`; without it the app still starts, `/detect` works, and `/query` returns a clear `503` instead of crashing.
 
+**Project links:** [live demo](https://huggingface.co/spaces/iamaber/image-analysis-and-qa-rag) · [source](https://github.com/iamaber/image-analysis-and-qa) · [portfolio](https://iamaber.github.io/portfolio-website/)
+
 ## Stack
 
 - FastAPI + Uvicorn
