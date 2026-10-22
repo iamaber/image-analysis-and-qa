@@ -15,4 +15,8 @@ __pycache__/
 
 # YOLO weights are fetched at runtime (or baked into the Docker image at build time)
 *.pt
+yolo11m/
 models/
+
+# Torch serialization artifacts
+*.pkl
