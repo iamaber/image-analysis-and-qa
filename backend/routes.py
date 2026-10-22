@@ -3,12 +3,14 @@ import base64
 import logging
 import os
 import tempfile
+import time
+from collections import deque
 from functools import lru_cache
 from io import BytesIO
 from typing import Any
 
 from dotenv import load_dotenv
-from fastapi import File, HTTPException, UploadFile
+from fastapi import File, HTTPException, Request, UploadFile
 from PIL import Image, UnidentifiedImageError
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
@@ -37,14 +39,14 @@ from ultralytics import YOLO
 
 
 class DetectionRecord(BaseModel):
-    class_name: str
+    class_name: str = Field(max_length=100)
     bounding_box: list[float] = Field(min_length=4, max_length=4)
     confidence: float
 
 
 class QueryRequest(BaseModel):
     query: str = Field(max_length=2000)
-    detections: list[DetectionRecord]
+    detections: list[DetectionRecord] = Field(max_length=200)
 
 
 class QAUnavailableError(RuntimeError):
@@ -60,6 +62,45 @@ QA_UNAVAILABLE_DETAIL = (
 model_path = os.getenv("YOLO_MODEL_PATH", "yolo11m.pt")
 max_upload_bytes = int(os.getenv("MAX_UPLOAD_BYTES", str(10 * 1024 * 1024)))
 upload_chunk_size = 1024 * 1024
+query_rate_limit = int(os.getenv("QUERY_RATE_LIMIT", "10"))
+query_rate_window_seconds = int(os.getenv("QUERY_RATE_WINDOW_SECONDS", "60"))
+query_request_counts: dict[str, deque[float]] = {}
+_query_requests_since_cleanup = 0
+
+
+def enforce_query_rate_limit(client_host: str | None) -> None:
+    """Allow query_rate_limit requests per client within a sliding window."""
+    if query_rate_limit <= 0:
+        return
+
+    global _query_requests_since_cleanup
+    now = time.monotonic()
+    key = client_host or "unknown"
+    window_start = now - query_rate_window_seconds
+
+    if _query_requests_since_cleanup >= 1000:
+        for stale_key in [
+            existing
+            for existing, stamps in query_request_counts.items()
+            if not stamps or stamps[-1] <= window_start
+        ]:
+            del query_request_counts[stale_key]
+        _query_requests_since_cleanup = 0
+
+    timestamps = query_request_counts.setdefault(key, deque())
+    while timestamps and timestamps[0] <= window_start:
+        timestamps.popleft()
+
+    if len(timestamps) >= query_rate_limit:
+        retry_after = max(int(timestamps[0] + query_rate_window_seconds - now) + 1, 1)
+        raise HTTPException(
+            status_code=429,
+            detail="Too many questions. Please wait before trying again.",
+            headers={"Retry-After": str(retry_after)},
+        )
+
+    timestamps.append(now)
+    _query_requests_since_cleanup += 1
 
 
 def qa_is_configured() -> bool:
@@ -167,7 +208,9 @@ async def detect_endpoint(file: UploadFile = File(...)) -> dict[str, Any]:
     return {"image": f"data:image/png;base64,{image_base64}", "detections": detections}
 
 
-async def query_rag(request: QueryRequest) -> dict[str, Any]:
+async def query_rag(request: QueryRequest, http_request: Request) -> dict[str, Any]:
+    enforce_query_rate_limit(http_request.client.host if http_request.client else None)
+
     query = request.query.strip()
     if not query:
         raise HTTPException(status_code=400, detail="Query cannot be empty")

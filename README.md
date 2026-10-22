@@ -34,6 +34,8 @@ Copy `.env.example` to `.env` and adjust as needed.
 | `YOLO_CONFIG_DIR` | No | `.ultralytics` | Writable directory for Ultralytics settings/cache. Falls back to a temp directory if the default is not writable. |
 | `CORS_ALLOW_ORIGINS` | No | `http://localhost:8000,http://127.0.0.1:8000` | Comma-separated list of allowed origins. |
 | `MAX_UPLOAD_BYTES` | No | `10485760` (10 MB) | Maximum accepted upload size. |
+| `QUERY_RATE_LIMIT` | No | `10` | Maximum `/query` requests allowed per client IP within the rate window. Set to `0` to disable. |
+| `QUERY_RATE_WINDOW_SECONDS` | No | `60` | Length in seconds of the sliding `/query` rate-limit window. |
 
 ## API
 
@@ -91,7 +93,7 @@ Returns:
 }
 ```
 
-`query` is limited to 2000 characters and `detections` must be non-empty (`400` otherwise). Without `GROQ_API_KEY` the endpoint returns `503` with a message explaining that question answering is not configured.
+`query` is limited to 2000 characters, `detections` is capped at 200 records, and `detections` must be non-empty (`400` otherwise). Requests exceeding 10 per `QUERY_RATE_WINDOW_SECONDS` from one client IP return `429` with a `Retry-After` header. Without `GROQ_API_KEY` the endpoint returns `503` with a message explaining that question answering is not configured.
 
 ## Tests
 

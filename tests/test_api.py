@@ -50,6 +50,7 @@ def make_png() -> bytes:
 def clear_caches() -> None:
     routes.get_detector.cache_clear()
     routes.get_query_agent.cache_clear()
+    routes.query_request_counts.clear()
 
 
 def test_build_detection_context() -> None:
@@ -145,6 +146,54 @@ def test_query_requires_detections() -> None:
 
     assert response.status_code == 400
     assert "Detection data is required" in response.json()["detail"]
+
+
+def test_query_rejects_too_many_detections() -> None:
+    detections = [
+        {
+            "class_name": "person",
+            "bounding_box": [1.0, 2.0, 3.0, 4.0],
+            "confidence": 0.9,
+        }
+        for _ in range(201)
+    ]
+
+    response = client.post(
+        "/query",
+        json={"query": "How many?", "detections": detections},
+    )
+
+    assert response.status_code == 422
+
+
+def test_query_rate_limit_returns_429(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("GROQ_API_KEY", "test-key")
+    monkeypatch.setattr(routes, "query_rate_limit", 2)
+
+    payload = {
+        "query": "How many?",
+        "detections": [
+            {
+                "class_name": "person",
+                "bounding_box": [1.0, 2.0, 3.0, 4.0],
+                "confidence": 0.9,
+            }
+        ],
+    }
+
+    class FakeAgent:
+        async def run(self, prompt: str) -> Any:
+            return type("Result", (), {"output": "One person."})()
+
+    monkeypatch.setattr(routes, "get_query_agent", lambda: FakeAgent())
+
+    assert client.post("/query", json=payload).status_code == 200
+    assert client.post("/query", json=payload).status_code == 200
+
+    throttled = client.post("/query", json=payload)
+
+    assert throttled.status_code == 429
+    assert "Retry-After" in throttled.headers
 
 
 def test_detect_rejects_non_image_content_type() -> None:
