@@ -138,7 +138,8 @@ def get_detector() -> YOLO:
 
 def detect_objects(image: Image.Image) -> tuple[Image.Image, list[dict[str, Any]]]:
     results = get_detector()(image)
-    annotated_image = Image.fromarray(results[0].plot())
+    plotted = results[0].plot()
+    annotated_image = Image.fromarray(plotted[..., ::-1])
     return annotated_image, serialize_detections(results)
 
 

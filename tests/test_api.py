@@ -35,9 +35,18 @@ class FakeBox:
 
 
 class FakeResult:
-    def __init__(self, names: dict[int, str], boxes: list[FakeBox]) -> None:
+    def __init__(
+        self,
+        names: dict[int, str],
+        boxes: list[FakeBox],
+        plotted: Any = None,
+    ) -> None:
         self.names = names
         self.boxes = boxes
+        self._plotted = plotted
+
+    def plot(self) -> Any:
+        return self._plotted
 
 
 def make_png() -> bytes:
@@ -274,3 +283,23 @@ def test_detect_returns_503_when_model_unavailable(
 
     assert response.status_code == 503
     assert "unavailable" in response.json()["detail"]
+
+
+def test_detect_converts_plot_bgr_output_to_rgb(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import numpy as np
+
+    bgr_red = np.zeros((4, 4, 3), dtype=np.uint8)
+    bgr_red[..., 2] = 255
+
+    class FakeModel:
+        def __call__(self, image: Image.Image) -> list[FakeResult]:
+            return [FakeResult(names={0: "person"}, boxes=[], plotted=bgr_red)]
+
+    monkeypatch.setattr(routes, "get_detector", lambda: FakeModel())
+
+    annotated, detections = routes.detect_objects(Image.new("RGB", (4, 4)))
+
+    assert detections == []
+    assert annotated.getpixel((0, 0)) == (255, 0, 0)
