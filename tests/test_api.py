@@ -205,6 +205,72 @@ def test_query_rate_limit_returns_429(monkeypatch: pytest.MonkeyPatch) -> None:
     assert "Retry-After" in throttled.headers
 
 
+QUERY_PAYLOAD = {
+    "query": "How many?",
+    "detections": [
+        {
+            "class_name": "person",
+            "bounding_box": [1.0, 2.0, 3.0, 4.0],
+            "confidence": 0.9,
+        }
+    ],
+}
+
+
+def test_query_returns_error_when_groq_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from pydantic_ai.exceptions import ModelHTTPError
+
+    monkeypatch.setenv("GROQ_API_KEY", "test-key")
+
+    class FailingAgent:
+        async def run(self, prompt: str) -> Any:
+            raise ModelHTTPError(status_code=401, model_name="openai/gpt-oss-20b")
+
+    monkeypatch.setattr(routes, "get_query_agent", lambda: FailingAgent())
+
+    response = client.post("/query", json=QUERY_PAYLOAD)
+
+    assert response.status_code == 502
+    assert "temporarily unavailable" in response.json()["detail"]
+
+
+def test_query_maps_groq_server_error_to_503(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from pydantic_ai.exceptions import ModelHTTPError
+
+    monkeypatch.setenv("GROQ_API_KEY", "test-key")
+
+    class FailingAgent:
+        async def run(self, prompt: str) -> Any:
+            raise ModelHTTPError(status_code=503, model_name="openai/gpt-oss-20b")
+
+    monkeypatch.setattr(routes, "get_query_agent", lambda: FailingAgent())
+
+    response = client.post("/query", json=QUERY_PAYLOAD)
+
+    assert response.status_code == 503
+
+
+def test_query_returns_502_on_unexpected_agent_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("GROQ_API_KEY", "test-key")
+
+    class FailingAgent:
+        async def run(self, prompt: str) -> Any:
+            raise RuntimeError("socket closed")
+
+    monkeypatch.setattr(routes, "get_query_agent", lambda: FailingAgent())
+
+    response = client.post("/query", json=QUERY_PAYLOAD)
+
+    assert response.status_code == 502
+    assert "check the server logs" in response.json()["detail"].lower()
+
+
 def test_detect_rejects_non_image_content_type() -> None:
     response = client.post(
         "/detect",

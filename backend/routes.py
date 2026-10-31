@@ -14,6 +14,7 @@ from fastapi import File, HTTPException, Request, UploadFile
 from PIL import Image, UnidentifiedImageError
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
+from pydantic_ai.exceptions import ModelHTTPError
 from pydantic_ai.models.groq import GroqModel
 from pydantic_ai.settings import ModelSettings
 
@@ -258,5 +259,18 @@ async def query_rag(request: QueryRequest, http_request: Request) -> dict[str, A
         result = await get_query_agent().run(prompt)
     except QAUnavailableError as error:
         raise HTTPException(status_code=503, detail=str(error)) from error
+    except ModelHTTPError as error:
+        logger.exception("Groq request failed with status %s", error.status_code)
+        status_code = 503 if error.status_code >= 500 or error.status_code == 429 else 502
+        raise HTTPException(
+            status_code=status_code,
+            detail="Question answering is temporarily unavailable. Please try again later.",
+        ) from error
+    except Exception as error:
+        logger.exception("Question answering failed")
+        raise HTTPException(
+            status_code=502,
+            detail="Question answering failed. Check the server logs.",
+        ) from error
 
     return {"data": result.output, "sources": []}
