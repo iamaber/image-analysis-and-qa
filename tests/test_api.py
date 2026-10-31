@@ -225,6 +225,30 @@ def test_detect_rejects_invalid_image_bytes() -> None:
     assert response.json()["detail"] == "Uploaded file must be an image"
 
 
+def test_detect_rejects_images_over_pixel_limit(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(routes, "max_image_pixels", 16)
+
+    response = client.post(
+        "/detect",
+        files={"file": ("image.png", make_png(), "image/png")},
+    )
+
+    assert response.status_code == 413
+    assert "pixel limit" in response.json()["detail"]
+
+
+def test_detect_maps_decompression_bomb_to_413(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(Image, "MAX_IMAGE_PIXELS", 4)
+
+    response = client.post(
+        "/detect",
+        files={"file": ("image.png", make_png(), "image/png")},
+    )
+
+    assert response.status_code == 413
+    assert "pixel limit" in response.json()["detail"]
+
+
 def test_detect_enforces_upload_limit(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(routes, "max_upload_bytes", 8)
 

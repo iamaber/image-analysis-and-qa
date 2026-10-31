@@ -61,6 +61,7 @@ QA_UNAVAILABLE_DETAIL = (
 
 model_path = os.getenv("YOLO_MODEL_PATH", "yolo11m.pt")
 max_upload_bytes = int(os.getenv("MAX_UPLOAD_BYTES", str(10 * 1024 * 1024)))
+max_image_pixels = int(os.getenv("MAX_IMAGE_PIXELS", str(40_000_000)))
 upload_chunk_size = 1024 * 1024
 query_rate_limit = int(os.getenv("QUERY_RATE_LIMIT", "10"))
 query_rate_window_seconds = int(os.getenv("QUERY_RATE_WINDOW_SECONDS", "60"))
@@ -183,18 +184,36 @@ def get_query_agent() -> Agent:
     )
 
 
+def decode_image(contents: bytes) -> Image.Image:
+    try:
+        image = Image.open(BytesIO(contents))
+        width, height = image.size
+        if width * height > max_image_pixels:
+            raise HTTPException(
+                status_code=413,
+                detail=(
+                    f"Image dimensions exceed the {max_image_pixels} pixel limit"
+                ),
+            )
+        return image.convert("RGB")
+    except Image.DecompressionBombError as error:
+        raise HTTPException(
+            status_code=413,
+            detail=f"Image dimensions exceed the {max_image_pixels} pixel limit",
+        ) from error
+    except (UnidentifiedImageError, OSError) as error:
+        raise HTTPException(
+            status_code=400,
+            detail="Uploaded file must be an image",
+        ) from error
+
+
 async def detect_endpoint(file: UploadFile = File(...)) -> dict[str, Any]:
     if file.content_type is not None and not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="Uploaded file must be an image")
 
     contents = await read_upload_with_limit(file)
-    try:
-        input_image = Image.open(BytesIO(contents)).convert("RGB")
-    except UnidentifiedImageError as error:
-        raise HTTPException(
-            status_code=400,
-            detail="Uploaded file must be an image",
-        ) from error
+    input_image = decode_image(contents)
 
     try:
         annotated_image, detections = await asyncio.to_thread(detect_objects, input_image)
