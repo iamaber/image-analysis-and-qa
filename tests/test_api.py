@@ -1,14 +1,17 @@
 import io
+import logging
 from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
 
+import main
 from backend import routes
 from backend.app import app
 
 client = TestClient(app)
+main_client = TestClient(main.app)
 
 
 class FakeValue:
@@ -393,3 +396,67 @@ def test_detect_converts_plot_bgr_output_to_rgb(
 
     assert detections == []
     assert annotated.getpixel((0, 0)) == (255, 0, 0)
+
+
+def test_query_success_returns_agent_output(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("GROQ_API_KEY", "test-key")
+
+    class FakeAgent:
+        def __init__(self) -> None:
+            self.prompt = ""
+
+        async def run(self, prompt: str) -> Any:
+            self.prompt = prompt
+            return type("Result", (), {"output": "There is 1 person."})()
+
+    agent = FakeAgent()
+    monkeypatch.setattr(routes, "get_query_agent", lambda: agent)
+
+    response = client.post("/query", json=QUERY_PAYLOAD)
+
+    assert response.status_code == 200
+    assert response.json() == {"data": "There is 1 person.", "sources": []}
+    assert "Detected person with confidence 0.90" in agent.prompt
+    assert "Query: How many?" in agent.prompt
+
+
+def test_query_logs_unexpected_agent_error(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    monkeypatch.setenv("GROQ_API_KEY", "test-key")
+
+    class FailingAgent:
+        async def run(self, prompt: str) -> Any:
+            raise RuntimeError("socket closed")
+
+    monkeypatch.setattr(routes, "get_query_agent", lambda: FailingAgent())
+
+    with caplog.at_level(logging.ERROR):
+        client.post("/query", json=QUERY_PAYLOAD)
+
+    assert "Question answering failed" in caplog.text
+
+
+def test_root_serves_application() -> None:
+    with main_client:
+        response = main_client.get("/")
+
+    assert response.status_code == 200
+    assert "text/html" in response.headers["content-type"]
+
+
+def test_application_redirects_to_root() -> None:
+    with main_client:
+        response = main_client.get("/application", follow_redirects=False)
+
+    assert response.status_code == 307
+    assert response.headers["location"] == "/"
+
+
+def test_static_mount_serves_frontend() -> None:
+    with main_client:
+        response = main_client.get("/static/application.html")
+
+    assert response.status_code == 200
+    assert b"<" in response.content
