@@ -1,3 +1,9 @@
+---
+title: AI Vision Workspace
+sdk: docker
+app_port: 7860
+---
+
 # AI Vision Workspace
 
 Single-page image analysis workspace for object detection and question answering. Upload an image, run YOLO detection, then ask follow-up questions grounded in the detection results through a `pydantic-ai` agent backed by Groq's `openai/gpt-oss-20b` model.
@@ -106,7 +112,7 @@ uv run pytest
 
 ## Deploying to a Hugging Face Docker Space
 
-The repository includes a `Dockerfile` for a CPU Hugging Face Docker Space (`sdk: docker`, `app_port: 7860`):
+The repository includes a `Dockerfile` for a CPU Hugging Face Docker Space. The `sdk: docker` and `app_port: 7860` Space settings live in the YAML frontmatter at the top of this README, so a fresh push configures the Space automatically:
 
 - The container runs as a non-root user (UID 1000), as Hugging Face requires.
 - The app listens on `0.0.0.0:7860`.
