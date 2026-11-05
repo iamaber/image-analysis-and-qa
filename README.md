@@ -25,7 +25,7 @@ cp .env.example .env          # optional; add GROQ_API_KEY for question answerin
 uv run python main.py
 ```
 
-Open `http://localhost:8000`.
+Open `http://localhost:8000`. `uv run python main.py` binds `127.0.0.1` with auto-reload off; set `RELOAD=1` to enable the development reloader.
 
 The YOLO weights are not committed to the repository. Ultralytics downloads the stock `yolo11m.pt` on first detection (or the Docker image fetches them at build time).
 
