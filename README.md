@@ -58,7 +58,7 @@ Copy `.env.example` to `.env` and adjust as needed.
 
 ### `POST /detect`
 
-Multipart upload in the `file` field. Only `image/*` content types are accepted, and uploads larger than `MAX_UPLOAD_BYTES` are rejected with `413`.
+Multipart upload in the `file` field. Only `image/*` content types are accepted, and uploads larger than `MAX_UPLOAD_BYTES` or images above `MAX_IMAGE_PIXELS` are rejected with `413`.
 
 ```json
 {
@@ -73,7 +73,7 @@ Multipart upload in the `file` field. Only `image/*` content types are accepted,
 }
 ```
 
-Returns `400` for non-image or unreadable uploads and `503` if the detection model cannot be loaded.
+Returns `400` for a missing, non-image, or unreadable upload and `503` if the detection model cannot be loaded.
 
 ### `POST /query`
 
@@ -99,7 +99,7 @@ Returns:
 }
 ```
 
-`query` is limited to 2000 characters, `detections` is capped at 200 records, and `detections` must be non-empty (`400` otherwise). Requests exceeding 10 per `QUERY_RATE_WINDOW_SECONDS` from one client IP return `429` with a `Retry-After` header. Without `GROQ_API_KEY` the endpoint returns `503` with a message explaining that question answering is not configured.
+`query` is limited to 2000 characters and `detections` is capped at 200 records; payloads that fail schema validation return `422`. `detections` must be non-empty (`400` otherwise). Requests exceeding `QUERY_RATE_LIMIT` per `QUERY_RATE_WINDOW_SECONDS` from one client IP return `429` with a `Retry-After` header. Without `GROQ_API_KEY` the endpoint returns `503` with a message explaining that question answering is not configured.
 
 ## Tests
 

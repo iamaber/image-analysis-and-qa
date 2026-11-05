@@ -1,8 +1,11 @@
+import asyncio
 import io
 import logging
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from PIL import Image
 
@@ -282,6 +285,14 @@ def test_detect_rejects_non_image_content_type() -> None:
 
     assert response.status_code == 400
     assert response.json()["detail"] == "Uploaded file must be an image"
+
+
+def test_detect_rejects_missing_content_type() -> None:
+    with pytest.raises(HTTPException) as exc_info:
+        asyncio.run(routes.detect_endpoint(file=SimpleNamespace(content_type=None)))
+
+    assert exc_info.value.status_code == 400
+    assert exc_info.value.detail == "Uploaded file must be an image"
 
 
 def test_detect_rejects_invalid_image_bytes() -> None:

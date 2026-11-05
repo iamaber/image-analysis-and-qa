@@ -159,9 +159,10 @@ async def read_upload_with_limit(file: UploadFile) -> bytes:
     while chunk := await file.read(upload_chunk_size):
         total_bytes += len(chunk)
         if total_bytes > max_upload_bytes:
+            limit_mb = max_upload_bytes / (1024 * 1024)
             raise HTTPException(
                 status_code=413,
-                detail=f"Uploaded file exceeds the {max_upload_bytes // (1024 * 1024)} MB limit",
+                detail=f"Uploaded file exceeds the {limit_mb:g} MB limit",
             )
         chunks.extend(chunk)
 
@@ -210,7 +211,7 @@ def decode_image(contents: bytes) -> Image.Image:
 
 
 async def detect_endpoint(file: UploadFile = File(...)) -> dict[str, Any]:
-    if file.content_type is not None and not file.content_type.startswith("image/"):
+    if not (file.content_type or "").startswith("image/"):
         raise HTTPException(status_code=400, detail="Uploaded file must be an image")
 
     contents = await read_upload_with_limit(file)
