@@ -40,8 +40,10 @@ Copy `.env.example` to `.env` and adjust as needed.
 | `YOLO_CONFIG_DIR` | No | `.ultralytics` | Writable directory for Ultralytics settings/cache. Falls back to a temp directory if the default is not writable. |
 | `CORS_ALLOW_ORIGINS` | No | `http://localhost:8000,http://127.0.0.1:8000` | Comma-separated list of allowed origins. |
 | `MAX_UPLOAD_BYTES` | No | `10485760` (10 MB) | Maximum accepted upload size. |
+| `MAX_IMAGE_PIXELS` | No | `40000000` | Maximum decoded width × height accepted by `/detect`. |
 | `QUERY_RATE_LIMIT` | No | `10` | Maximum `/query` requests allowed per client IP within the rate window. Set to `0` to disable. |
 | `QUERY_RATE_WINDOW_SECONDS` | No | `60` | Length in seconds of the sliding `/query` rate-limit window. |
+| `LOG_LEVEL` | No | `INFO` | Root logging level for detection and question-answering failures. |
 
 ## API
 
