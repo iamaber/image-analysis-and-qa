@@ -96,8 +96,7 @@ Returns:
 
 ```json
 {
-  "data": "There is 1 person in the image.",
-  "sources": []
+  "data": "There is 1 person in the image."
 }
 ```
 

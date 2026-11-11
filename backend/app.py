@@ -3,7 +3,7 @@ import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routes import detect_endpoint, qa_is_configured, query_rag
+from .routes import detect_endpoint, qa_is_configured, query_detections
 
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO").upper(),
@@ -36,7 +36,7 @@ app.add_middleware(
 )
 
 app.post("/detect")(detect_endpoint)
-app.post("/query")(query_rag)
+app.post("/query")(query_detections)
 
 
 @app.get("/health")

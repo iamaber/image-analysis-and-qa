@@ -230,7 +230,7 @@ async def detect_endpoint(file: UploadFile = File(...)) -> dict[str, Any]:
     return {"image": f"data:image/png;base64,{image_base64}", "detections": detections}
 
 
-async def query_rag(request: QueryRequest, http_request: Request) -> dict[str, Any]:
+async def query_detections(request: QueryRequest, http_request: Request) -> dict[str, Any]:
     enforce_query_rate_limit(http_request.client.host if http_request.client else None)
 
     query = request.query.strip()
@@ -274,4 +274,4 @@ async def query_rag(request: QueryRequest, http_request: Request) -> dict[str, A
             detail="Question answering failed. Check the server logs.",
         ) from error
 
-    return {"data": result.output, "sources": []}
+    return {"data": result.output}

@@ -426,7 +426,7 @@ def test_query_success_returns_agent_output(monkeypatch: pytest.MonkeyPatch) -> 
     response = client.post("/query", json=QUERY_PAYLOAD)
 
     assert response.status_code == 200
-    assert response.json() == {"data": "There is 1 person.", "sources": []}
+    assert response.json() == {"data": "There is 1 person."}
     assert "Detected person with confidence 0.90" in agent.prompt
     assert "Query: How many?" in agent.prompt
 
