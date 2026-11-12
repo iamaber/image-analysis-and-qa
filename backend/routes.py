@@ -15,8 +15,7 @@ from PIL import Image, UnidentifiedImageError
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
 from pydantic_ai.exceptions import ModelHTTPError
-from pydantic_ai.models.groq import GroqModel
-from pydantic_ai.settings import ModelSettings
+from pydantic_ai.models.groq import GroqModel, GroqModelSettings
 
 logger = logging.getLogger(__name__)
 
@@ -177,7 +176,7 @@ def get_query_agent() -> Agent:
     model = GroqModel("openai/gpt-oss-20b")
     return Agent(
         model,
-        model_settings=ModelSettings(
+        model_settings=GroqModelSettings(
             temperature=0,
             max_tokens=400,
             groq_reasoning_format="hidden",
