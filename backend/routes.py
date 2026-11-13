@@ -230,7 +230,6 @@ async def detect_endpoint(file: UploadFile = File(...)) -> dict[str, Any]:
 
 
 async def query_detections(request: QueryRequest, http_request: Request) -> dict[str, Any]:
-    enforce_query_rate_limit(http_request.client.host if http_request.client else None)
 
     query = request.query.strip()
     if not query:
@@ -244,6 +243,8 @@ async def query_detections(request: QueryRequest, http_request: Request) -> dict
 
     if not qa_is_configured():
         raise HTTPException(status_code=503, detail=QA_UNAVAILABLE_DETAIL)
+    enforce_query_rate_limit(http_request.client.host if http_request.client else None)
+
 
     prompt = (
         "Answer questions about image detection results such as object counts, "
