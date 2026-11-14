@@ -1,6 +1,8 @@
 import asyncio
 import base64
+import logging
 import os
+import tempfile
 from functools import lru_cache
 from io import BytesIO
 from typing import Any
@@ -13,9 +15,23 @@ from pydantic_ai import Agent
 from pydantic_ai.models.groq import GroqModel
 from pydantic_ai.settings import ModelSettings
 
+logger = logging.getLogger(__name__)
+
 load_dotenv()
-os.environ.setdefault("YOLO_CONFIG_DIR", ".ultralytics")
-os.makedirs(os.environ["YOLO_CONFIG_DIR"], exist_ok=True)
+
+
+def prepare_yolo_config_dir() -> str:
+    configured = os.getenv("YOLO_CONFIG_DIR", ".ultralytics")
+    try:
+        os.makedirs(configured, exist_ok=True)
+        return configured
+    except OSError:
+        fallback = os.path.join(tempfile.gettempdir(), "ultralytics")
+        os.makedirs(fallback, exist_ok=True)
+        return fallback
+
+
+os.environ["YOLO_CONFIG_DIR"] = prepare_yolo_config_dir()
 
 from ultralytics import YOLO
 
@@ -31,9 +47,23 @@ class QueryRequest(BaseModel):
     detections: list[DetectionRecord]
 
 
+class QAUnavailableError(RuntimeError):
+    pass
+
+
+QA_UNAVAILABLE_DETAIL = (
+    "Question answering is not configured on this deployment. Set the "
+    "GROQ_API_KEY environment variable and restart the app to enable it. "
+    "Object detection is still available."
+)
+
 model_path = os.getenv("YOLO_MODEL_PATH", "yolo11m.pt")
 max_upload_bytes = int(os.getenv("MAX_UPLOAD_BYTES", str(10 * 1024 * 1024)))
 upload_chunk_size = 1024 * 1024
+
+
+def qa_is_configured() -> bool:
+    return bool(os.getenv("GROQ_API_KEY", "").strip())
 
 
 def build_detection_context(detections: list[DetectionRecord]) -> str:
@@ -96,8 +126,8 @@ async def read_upload_with_limit(file: UploadFile) -> bytes:
 
 @lru_cache(maxsize=1)
 def get_query_agent() -> Agent:
-    if not os.getenv("GROQ_API_KEY"):
-        raise RuntimeError("GROQ_API_KEY is not configured")
+    if not qa_is_configured():
+        raise QAUnavailableError(QA_UNAVAILABLE_DETAIL)
 
     model = GroqModel("openai/gpt-oss-20b")
     return Agent(
@@ -124,7 +154,15 @@ async def detect_endpoint(file: UploadFile = File(...)) -> dict[str, Any]:
             detail="Uploaded file must be an image",
         ) from error
 
-    annotated_image, detections = await asyncio.to_thread(detect_objects, input_image)
+    try:
+        annotated_image, detections = await asyncio.to_thread(detect_objects, input_image)
+    except Exception as error:
+        logger.exception("Detection failed")
+        raise HTTPException(
+            status_code=503,
+            detail="Detection model is unavailable. Check the server logs.",
+        ) from error
+
     image_base64 = encode_image(annotated_image)
     return {"image": f"data:image/png;base64,{image_base64}", "detections": detections}
 
@@ -140,6 +178,9 @@ async def query_rag(request: QueryRequest) -> dict[str, Any]:
             detail="Detection data is required before asking questions",
         )
 
+    if not qa_is_configured():
+        raise HTTPException(status_code=503, detail=QA_UNAVAILABLE_DETAIL)
+
     prompt = (
         "Answer questions about image detection results such as object counts, "
         "confidence scores, object names, and bounding boxes. If the query is "
@@ -152,7 +193,7 @@ async def query_rag(request: QueryRequest) -> dict[str, Any]:
 
     try:
         result = await get_query_agent().run(prompt)
-    except RuntimeError as error:
-        raise HTTPException(status_code=500, detail=str(error)) from error
+    except QAUnavailableError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
 
     return {"data": result.output, "sources": []}
