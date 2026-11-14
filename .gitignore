@@ -1,6 +1,18 @@
 *.pyc
+*.pyo
 .env
+.env.*
+!.env.example
 .venv/
+venv/
 __pycache__/
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
 .ultralytics/
+.cache/
+.DS_Store
+
+# YOLO weights are fetched at runtime (or baked into the Docker image at build time)
+*.pt
+models/
