@@ -1,20 +1,36 @@
 [project]
 name = "image-analysis-and-qa"
 version = "0.1.0"
-description = "Add your description here"
+description = "YOLO object detection with question answering over detection results"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.121.2",
     "pillow>=12.0.0",
     "python-multipart>=0.0.20",
-    "ultralytics>=8.3.229",
+    "ultralytics==8.3.229",
     "uvicorn>=0.38.0",
     "pydantic-ai>=0.0.14",
     "python-dotenv>=1.0.0",
+    "torch==2.9.1",
+    "torchvision==0.24.1",
 ]
 
 [dependency-groups]
 dev = [
     "pytest>=8.4.2",
+    "httpx>=0.28.1",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
+torchvision = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
