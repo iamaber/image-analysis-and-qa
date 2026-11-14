@@ -3,6 +3,7 @@ name = "image-analysis-and-qa"
 version = "0.1.0"
 description = "YOLO object detection with question answering over detection results"
 readme = "README.md"
+license = "AGPL-3.0-or-later"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.121.2",

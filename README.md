@@ -125,4 +125,17 @@ Dockerfile      Hugging Face Docker Space image
 
 ## License
 
-No project license has been chosen yet. Note that the runtime dependency **Ultralytics is licensed under AGPL-3.0**, and the project ships and serves it (including over a network). That has copyleft implications for distributing or hosting this application; the license choice needs the owner's decision.
+Copyright (c) 2025 iamaber
+
+This application is released under the GNU Affero General Public License,
+version 3 or (at your option) any later version (AGPL-3.0-or-later); see
+[LICENSE](LICENSE) for the full terms. The app imports and serves Ultralytics
+YOLO over a network. The installed `ultralytics==8.3.229` package declares
+`License: AGPL-3.0`, classifies itself as AGPLv3+, and includes the AGPL v3
+licence, so this project adopts the same copyleft terms.
+
+The [source repository](https://github.com/iamaber/image-analysis-and-qa)
+provides the corresponding source for this application, including its build
+configuration and dependency lockfile. If you distribute or host a modified
+version, provide users access to that version's corresponding source under
+the AGPL, including the network source offer required by section 13.
