@@ -33,8 +33,8 @@ COPY --chown=user frontend ./frontend
 COPY --chown=user main.py ./
 
 RUN mkdir -p /app/models \
-    && /app/.venv/bin/python -c "from ultralytics import YOLO; YOLO('yolo11m.pt')" \
-    && mv /app/yolo11m.pt /app/models/yolo11m.pt
+    && /app/.venv/bin/python -c "from ultralytics import YOLO; YOLO('/app/models/yolo11m.pt')" \
+    && test -s /app/models/yolo11m.pt
 
 EXPOSE 7860
 
