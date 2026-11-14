@@ -897,7 +897,7 @@ dependencies = [
     { name = "torch", version = "2.9.1+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform == 'linux'" },
     { name = "torchvision", version = "0.24.1", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "platform_machine == 'aarch64' and sys_platform == 'linux'" },
     { name = "torchvision", version = "0.24.1", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'linux'" },
-    { name = "torchvision", version = "0.24.1+d801a34", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "platform_machine != 'aarch64' and sys_platform == 'linux'" },
+    { name = "torchvision", version = "0.24.1+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "ultralytics" },
     { name = "uvicorn" },
 ]
@@ -918,7 +918,8 @@ requires-dist = [
     { name = "torch", marker = "sys_platform != 'linux'", specifier = "==2.9.1" },
     { name = "torch", marker = "sys_platform == 'linux'", specifier = "==2.9.1", index = "https://download.pytorch.org/whl/cpu" },
     { name = "torchvision", marker = "sys_platform != 'linux'", specifier = "==0.24.1" },
-    { name = "torchvision", marker = "sys_platform == 'linux'", specifier = "==0.24.1", index = "https://download.pytorch.org/whl/cpu" },
+    { name = "torchvision", marker = "platform_machine == 'aarch64' and sys_platform == 'linux'", specifier = "==0.24.1", index = "https://download.pytorch.org/whl/cpu" },
+    { name = "torchvision", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'", specifier = "==0.24.1+cpu", index = "https://download.pytorch.org/whl/cpu" },
     { name = "ultralytics", specifier = "==8.3.229" },
     { name = "uvicorn", specifier = ">=0.38.0" },
 ]
@@ -2839,7 +2840,7 @@ wheels = [
 
 [[package]]
 name = "torchvision"
-version = "0.24.1+d801a34"
+version = "0.24.1+cpu"
 source = { registry = "https://download.pytorch.org/whl/cpu" }
 resolution-markers = [
     "python_full_version >= '3.14' and platform_machine != 'aarch64' and sys_platform == 'linux'",
@@ -2850,6 +2851,13 @@ dependencies = [
     { name = "numpy" },
     { name = "pillow" },
     { name = "torch", version = "2.9.1+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" } },
+]
+wheels = [
+    { url = "https://download-r2.pytorch.org/whl/cpu/torchvision-0.24.1%2Bcpu-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:48ff40694812292f1f75cddb517f9eef224a2e8388798a0aa191e27bf159fc5d", upload-time = "2025-11-15T18:12:45Z" },
+    { url = "https://download-r2.pytorch.org/whl/cpu/torchvision-0.24.1%2Bcpu-cp313-cp313-manylinux_2_28_x86_64.whl", hash = "sha256:19eb1744686a992522bf9ab8bf4b3245c2202e93a39b1fe1fcb2b8d2ca982048", upload-time = "2025-11-15T18:12:45Z" },
+    { url = "https://download-r2.pytorch.org/whl/cpu/torchvision-0.24.1%2Bcpu-cp313-cp313t-manylinux_2_28_x86_64.whl", hash = "sha256:0a3fecbadc155e7bf378178029215bfcd86f2cf453fbb1d9a474f375b3d475ae", upload-time = "2025-11-15T18:12:45Z" },
+    { url = "https://download-r2.pytorch.org/whl/cpu/torchvision-0.24.1%2Bcpu-cp314-cp314-manylinux_2_28_x86_64.whl", hash = "sha256:e2c56fdda9e7a0f927d0d2748d756eb11e350e576efc719e9ab8a1b610213835", upload-time = "2025-11-15T18:12:45Z" },
+    { url = "https://download-r2.pytorch.org/whl/cpu/torchvision-0.24.1%2Bcpu-cp314-cp314t-manylinux_2_28_x86_64.whl", hash = "sha256:ad95138606b528c0c8976e6e0b184665433505c1aa87472bd31675f71d9d81c5", upload-time = "2025-11-15T18:12:45Z" },
 ]
 
 [[package]]
@@ -2937,7 +2945,7 @@ dependencies = [
     { name = "torch", version = "2.9.1+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform == 'linux'" },
     { name = "torchvision", version = "0.24.1", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "platform_machine == 'aarch64' and sys_platform == 'linux'" },
     { name = "torchvision", version = "0.24.1", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'linux'" },
-    { name = "torchvision", version = "0.24.1+d801a34", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "platform_machine != 'aarch64' and sys_platform == 'linux'" },
+    { name = "torchvision", version = "0.24.1+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "platform_machine != 'aarch64' and sys_platform == 'linux'" },
     { name = "ultralytics-thop" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/42/0f/b3e412971046b3ab4f4333b879cb376d2b454a417e3d9b6f07c6e67a7e53/ultralytics-8.3.229.tar.gz", hash = "sha256:f99b219f1159c4806ed958d2d9f34580221816019062e0f2b197f21270bffc21", size = 928163, upload-time = "2025-11-18T23:53:38.109Z" }
